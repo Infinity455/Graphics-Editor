@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap
 
 class Canvas(QWidget):
@@ -15,29 +15,31 @@ class Canvas(QWidget):
         painter.drawPixmap(460, 160, self.pixmap)
 
 class ToolBox(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet("background-color: white;")
         self.masterLayout = QGridLayout()
+        self.setLayout(self.masterLayout)
         
         self.pencilButton = QPushButton("Pencil", self)
         self.pencilButton.clicked.connect(self.pencilClicked)
-        self.masterLayout.addWidget(self.pencilButton)
+        self.masterLayout.addWidget(self.pencilButton, 0, 0)
 
         self.brushButton = QPushButton("Brush", self)
         self.brushButton.clicked.connect(self.brushClicked)
-        self.masterLayout.addWidget(self.brushButton)
+        self.masterLayout.addWidget(self.brushButton, 0, 1)
 
         self.boxSelButton = QPushButton("Box Selection", self)
         self.boxSelButton.clicked.connect(self.selectionClicked)
-        self.masterLayout.addWidget(self.boxSelButton)
+        self.masterLayout.addWidget(self.boxSelButton, 1, 0)
 
         self.elSelButton = QPushButton("Ellipse Selection", self)
         self.elSelButton.clicked.connect(self.selectionClicked)
-        self.masterLayout.addWidget(self.elSelButton)
+        self.masterLayout.addWidget(self.elSelButton, 1, 1)
 
         self.fillButton = QPushButton("Fill", self)
         self.fillButton.clicked.connect(self.fillClicked)
-        self.masterLayout.addWidget(self.fillButton)
+        self.masterLayout.addWidget(self.fillButton, 2, 0)
 
     def pencilClicked(self):
         pass
@@ -62,17 +64,37 @@ class Window(QMainWindow):
         # Set up of overall initial GUI
         self.setStyleSheet("background-color: grey;")
 
-        self.menu = QMenuBar
+        self.menu = QMenuBar()
+        self.locationLabel = QLabel(self)
+        self.locationLabel.setText("0, 0")
+        self.locationLabel.setWindowFlags(self.locationLabel.windowFlags() | Qt.Tool)
+        self.locationLabel.setGeometry(10, 200, 100, 30)
+        self.locationLabel.show()
+
+        self.sideLayout = QVBoxLayout()
+        self.sideLayout.addWidget(self.locationLabel)
 
         self.canvas = Canvas(1000, 750)
+        self.canvas.setMouseTracking(True)
         self.setCentralWidget(self.canvas)
 
-        self.toolWindow = ToolBox()
+        self.toolWindow = ToolBox(self)
+        self.toolWindow.setWindowFlags(self.toolWindow.windowFlags() | Qt.Tool)
+        self.toolWindow.show()
+
+        self.setMouseTracking(True)
 
         # Set up of brushes and tools
         self.drawing = False
         self.brushSize = 2
         self.brushColor = Qt.black
+
+    def mouseMoveEvent(self, event):
+        position = event.pos()
+        x = position.x()
+        y = position.y()
+
+        self.locationLabel.setText(f"{x}, {y}")
 
 if __name__ == "__main__":
     app = QApplication([])
