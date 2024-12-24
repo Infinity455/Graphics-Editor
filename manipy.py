@@ -1,6 +1,7 @@
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QBoxLayout, QAction
-from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap
+from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, 
+                             QPushButton, QVBoxLayout, QBoxLayout, QAction)
+from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QCursor
 
 class Canvas(QWidget):
     def __init__(self, parent=None, width=1000, height=750):
@@ -78,14 +79,62 @@ class ToolBox(QWidget):
     def fillClicked(self):
         pass
 
+class Brush(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.brush = None
+        self.size = 50
+        self.color = QColor(0, 0, 0)
+        self.poisiton = QPoint(0, 0)
+        self.setBrushType("pencil")
+
+    def setBrushType(self, type: str):
+        self.brush = type
+        match(type):
+            case "pencil":
+                pixmap = QPixmap(self.size, self.size)
+                pixmap.fill(Qt.transparent)
+
+                painter = QPainter(pixmap)
+                painter.setBrush(QColor(255, 0, 0, 100))
+                painter.setPen(QColor(0, 0, 0))
+                painter.drawRect(0, 0, self.size - 1, self.size - 1)
+                painter.end()
+
+                self.brushForCursor = QCursor(pixmap)
+                print("HELLO")
+            case "round":
+                self.brush = QRect()
+            case _:
+                print("WARNING: Brush not found")
+
+    def setBrushPosition(self, point: QPoint):
+        self.position = point
+
+    def getCurrentBrush(self):
+        return self.brushForCursor
+    
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setBrush(self.color)
+        
+        x, y = self.position.x, self.position.y
+        painter.drawRect(x - 25, y - 25, 50, 50)
+
+class ColorPicker(): # TODO allows for an overall gradient of the color spectrum for choosing
+    def __init__():
+        pass
 
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Set up basics of 
+        # Set up basics
         self.setUpMenuBar()
+        self.setUpToolBar()
+        self.setUpStatusBar()
         self.setStyleSheet("background-color: grey;")
+        self.brushSingle = Brush()
 
         # Creating Canvas with default size
         self.canvas = Canvas(self)
@@ -109,6 +158,7 @@ class Window(QMainWindow):
         self.toolWindow = ToolBox(self)
 
         # Set up of brushes and tools
+        self.setCursor(self.brushSingle.getCurrentBrush())
         self.drawing = False
         self.brushSize = 2
         self.brushColor = Qt.black
@@ -118,7 +168,7 @@ class Window(QMainWindow):
         x = position.x()
         y = position.y()
 
-        self.locationLabel.setText(f"{x}, {y}")
+        self.locationLabel.setText(f"{x}, {y}")    
 
     def setUpMenuBar(self):
         self.menuBar = QMenuBar()
@@ -136,6 +186,12 @@ class Window(QMainWindow):
 
         self.menuBar.addMenu(fileMenu)
         self.setMenuBar(self.menuBar)
+
+    def setUpStatusBar(self):
+        pass
+
+    def setUpToolBar(self):
+        pass
 
 if __name__ == "__main__":
     app = QApplication([])
