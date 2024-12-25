@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, 
                              QPushButton, QVBoxLayout, QBoxLayout, QAction)
-from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QCursor
+from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QCursor, QPainterPath
 
 class Canvas(QWidget):
     def __init__(self, parent=None, width=1000, height=750):
@@ -12,6 +12,8 @@ class Canvas(QWidget):
 
         self.pixmap = QPixmap(width, height)
         self.pixmap.fill(QColor("white"))
+
+        self.brush = Brush()
 
     def addLayer():
         pass
@@ -29,14 +31,38 @@ class Canvas(QWidget):
     def getSides(self):
         # returns a tuple of the sides (xLeft, yTop, xRight, yBottom)
         return self.geometry().getRect()
+    
+    def getBoundaries(self):
+        return self.geometry()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.drawPixmap(self.initOrigin[0], self.initOrigin[1], self.pixmap)
 
+    def toolPaint(self, position):
+        shape = self.brush.getShape()
+        brushSize = Brush().getSize()
+        localPos = self.mapFromGlobal(position)
+        xNorm = localPos.x() - self.initOrigin[0] - (int)(brushSize/2)
+        yNorm = localPos.y() - self.initOrigin[1] - (int)(brushSize/2)
+        shape.translate(xNorm, yNorm)
+        with QPainter(self.pixmap) as painter:
+            print(f"x: {localPos.x()}, y: {localPos.y()} with size: {Brush().getSize()}")
+            painter.setBrush(Qt.black)
+            painter.setPen(Qt.transparent)
+            painter.drawPath(shape)
+            # painter.drawRect(xNorm, yNorm, brushSize - 1, brushSize - 1)
+        
+        self.update()
+
 class ToolBox(QWidget):
+
+    toolChanged = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.brushControl = Brush()
+
         self.setStyleSheet("background-color: white;")
         self.masterLayout = QGridLayout()
         self.setLayout(self.masterLayout)
@@ -64,10 +90,17 @@ class ToolBox(QWidget):
         self.setWindowFlags(self.windowFlags() | Qt.Tool)
         self.show()
 
+    def getCurrentTool(self): # The choice of creating this method over subclassing ToolBox is in account that brushes aren't the only tools
+        return self.brushControl.getCurrentBrush()
+
     def pencilClicked(self):
-        pass
+        self.brushControl.setBrushType("pencil")
+        self.toolChanged.emit()
+
     def brushClicked(self):
-        pass
+        self.brushControl.setBrushType("round")
+        self.toolChanged.emit()
+
     def selectionClicked(self):
         button = app.sender()
         selectType = button.text()
@@ -80,12 +113,20 @@ class ToolBox(QWidget):
         pass
 
 class Brush(QWidget):
+    # Ensures class is a singleton
+    _instance = None
+    def __new__(current):
+        if current._instance is None:
+            current._instance = super().__new__(current)
+        return current._instance
+
     def __init__(self):
         super().__init__()
         self.brush = None
         self.size = 50
         self.color = QColor(0, 0, 0)
         self.poisiton = QPoint(0, 0)
+        self.shape = None
         self.setBrushType("pencil")
 
     def setBrushType(self, type: str):
@@ -95,16 +136,32 @@ class Brush(QWidget):
                 pixmap = QPixmap(self.size, self.size)
                 pixmap.fill(Qt.transparent)
 
-                painter = QPainter(pixmap)
-                painter.setBrush(QColor(255, 0, 0, 100))
-                painter.setPen(QColor(0, 0, 0))
-                painter.drawRect(0, 0, self.size - 1, self.size - 1)
-                painter.end()
+                with QPainter(pixmap) as painter:
+                    painter.setBrush(Qt.transparent)
+                    painter.setPen(Qt.black)
+                    painter.drawRect(0, 0, self.size - 1, self.size - 1)
 
                 self.brushForCursor = QCursor(pixmap)
-                print("HELLO")
+
+                path = QPainterPath()
+                path.addRect(0, 0, self.size - 1, self.size - 1)
+                if not self.shape == None:
+                    self.shape.clear()
+                self.shape = path
             case "round":
-                self.brush = QRect()
+                pixmap = QPixmap(self.size, self.size)
+                pixmap.fill(Qt.transparent)
+
+                with QPainter(pixmap) as painter:
+                    painter.setBrush(Qt.transparent)
+                    painter.setPen(Qt.black)
+                    painter.drawEllipse(0, 0, self.size - 1, self.size - 1)
+
+                self.brushForCursor = QCursor(pixmap)
+                path = QPainterPath()
+                path.addEllipse(0, 0, self.size - 1, self.size - 1)
+                self.shape.clear()
+                self.shape = path
             case _:
                 print("WARNING: Brush not found")
 
@@ -113,6 +170,20 @@ class Brush(QWidget):
 
     def getCurrentBrush(self):
         return self.brushForCursor
+    
+    def getShape(self):
+        return self.shape
+    
+    def getSize(self):
+        return self.size
+    
+    def increaseSize(self): # Increases size + resets same brush with new size
+        self.size += 1
+        self.setBrushType(self.brush)
+
+    def decreaseSize(self): # Decreases size + resets same brush with new size
+        self.size -= 1
+        self.setBrushType(self.brush)
     
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -134,7 +205,8 @@ class Window(QMainWindow):
         self.setUpToolBar()
         self.setUpStatusBar()
         self.setStyleSheet("background-color: grey;")
-        self.brushSingle = Brush()
+        self.currentTool = None
+        self.brush = Brush()
 
         # Creating Canvas with default size
         self.canvas = Canvas(self)
@@ -155,20 +227,36 @@ class Window(QMainWindow):
         self.sideLayout.addWidget(self.locationLabel)
 
         # toolbar window for tools for painting
-        self.toolWindow = ToolBox(self)
+        self.toolBox = ToolBox(self)
+        self.toolBox.toolChanged.connect(self.updateCursor)
 
         # Set up of brushes and tools
-        self.setCursor(self.brushSingle.getCurrentBrush())
+        self.setCursor(self.toolBox.getCurrentTool())
         self.drawing = False
-        self.brushSize = 2
-        self.brushColor = Qt.black
 
     def mouseMoveEvent(self, event):
-        position = event.pos()
+        position = event.globalPos()
         x = position.x()
         y = position.y()
 
-        self.locationLabel.setText(f"{x}, {y}")    
+        self.locationLabel.setText(f"{x}, {y}")
+
+        if self.drawing:
+            self.canvas.toolPaint(position)
+
+    def mousePressEvent(self, event):
+        position = event.globalPos()
+        x = position.x()
+        y = position.y()
+
+        self.drawing = True
+        self.canvas.toolPaint(position)
+
+    def mouseReleaseEvent(self, event):
+        self.drawing = False
+
+    def updateCursor(self):
+        self.setCursor(self.toolBox.getCurrentTool()) 
 
     def setUpMenuBar(self):
         self.menuBar = QMenuBar()
