@@ -48,18 +48,12 @@ class Canvas(QWidget):
         shape = QPainterPath(ogShape)
         shape.translate(xNorm, yNorm)
         with QPainter(self.pixmap) as painter:
-            # print(f"x: {localPos.x()}, y: {localPos.y()} with size: {Brush().getSize()}")
             painter.setBrush(Qt.black)
             painter.setPen(Qt.transparent)
             painter.drawPath(shape)
-            # painter.drawRect(xNorm, yNorm, brushSize - 1, brushSize - 1)
-        
-        print(self.brush.brush)
         self.update()
 
 class ToolBox(QWidget):
-
-    toolChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -97,11 +91,9 @@ class ToolBox(QWidget):
 
     def pencilClicked(self):
         self.brushControl.setBrushType("pencil")
-        self.toolChanged.emit()
 
     def brushClicked(self):
         self.brushControl.setBrushType("round")
-        self.toolChanged.emit()
 
     def selectionClicked(self):
         button = app.sender()
@@ -115,6 +107,9 @@ class ToolBox(QWidget):
         pass
 
 class Brush(QWidget):
+
+    toolChanged = pyqtSignal()
+
     # Ensures class is a singleton
     _instance = None
     def __new__(current):
@@ -165,6 +160,7 @@ class Brush(QWidget):
                 self.shape = path
             case _:
                 print("WARNING: Brush not found")
+        self.toolChanged.emit()
 
     def setBrushPosition(self, point: QPoint):
         self.position = point
@@ -185,13 +181,6 @@ class Brush(QWidget):
     def decreaseSize(self): # Decreases size + resets same brush with new size
         self.size -= 1
         self.setBrushType(self.brush)
-    
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setBrush(self.color)
-        
-        x, y = self.position.x, self.position.y
-        painter.drawRect(x - 25, y - 25, 50, 50)
 
 class ColorPicker(): # TODO allows for an overall gradient of the color spectrum for choosing
     def __init__():
@@ -229,7 +218,7 @@ class Window(QMainWindow):
 
         # toolbar window for tools for painting
         self.toolBox = ToolBox(self)
-        self.toolBox.toolChanged.connect(self.updateCursor)
+        self.brush.toolChanged.connect(self.updateCursor)
 
         # Set up of brushes and tools
         self.setCursor(self.toolBox.getCurrentTool())
@@ -255,6 +244,13 @@ class Window(QMainWindow):
 
     def mouseReleaseEvent(self, event):
         self.drawing = False
+
+    def keyPressEvent(self, event):
+        match event.key():
+            case Qt.Key_Plus:
+                self.brush.increaseSize()
+            case Qt.Key_Minus:
+                self.brush.decreaseSize()
 
     def updateCursor(self):
         self.setCursor(self.toolBox.getCurrentTool()) 
