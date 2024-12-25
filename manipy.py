@@ -40,19 +40,21 @@ class Canvas(QWidget):
         painter.drawPixmap(self.initOrigin[0], self.initOrigin[1], self.pixmap)
 
     def toolPaint(self, position):
-        shape = self.brush.getShape()
-        brushSize = Brush().getSize()
+        ogShape = self.brush.getShape()
+        brushSize = self.brush.getSize()
         localPos = self.mapFromGlobal(position)
         xNorm = localPos.x() - self.initOrigin[0] - (int)(brushSize/2)
         yNorm = localPos.y() - self.initOrigin[1] - (int)(brushSize/2)
+        shape = QPainterPath(ogShape)
         shape.translate(xNorm, yNorm)
         with QPainter(self.pixmap) as painter:
-            print(f"x: {localPos.x()}, y: {localPos.y()} with size: {Brush().getSize()}")
+            # print(f"x: {localPos.x()}, y: {localPos.y()} with size: {Brush().getSize()}")
             painter.setBrush(Qt.black)
             painter.setPen(Qt.transparent)
             painter.drawPath(shape)
             # painter.drawRect(xNorm, yNorm, brushSize - 1, brushSize - 1)
         
+        print(self.brush.brush)
         self.update()
 
 class ToolBox(QWidget):
@@ -131,6 +133,9 @@ class Brush(QWidget):
 
     def setBrushType(self, type: str):
         self.brush = type
+        if not self.shape == None:
+            self.shape = None
+        path = QPainterPath()
         match(type):
             case "pencil":
                 pixmap = QPixmap(self.size, self.size)
@@ -143,10 +148,7 @@ class Brush(QWidget):
 
                 self.brushForCursor = QCursor(pixmap)
 
-                path = QPainterPath()
                 path.addRect(0, 0, self.size - 1, self.size - 1)
-                if not self.shape == None:
-                    self.shape.clear()
                 self.shape = path
             case "round":
                 pixmap = QPixmap(self.size, self.size)
@@ -158,9 +160,8 @@ class Brush(QWidget):
                     painter.drawEllipse(0, 0, self.size - 1, self.size - 1)
 
                 self.brushForCursor = QCursor(pixmap)
-                path = QPainterPath()
+
                 path.addEllipse(0, 0, self.size - 1, self.size - 1)
-                self.shape.clear()
                 self.shape = path
             case _:
                 print("WARNING: Brush not found")
