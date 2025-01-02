@@ -26,7 +26,7 @@ class ColorPicker(QWidget): # TODO allows for an overall gradient of the color s
         sideToSide.setColorAt(1.0, QColor("cyan"))
 
         downToUp.setColorAt(0.0, QColor(0, 0, 0, 255))
-        downToUp.setColorAt(2.0, QColor(0, 0, 0, 255))
+        # downToUp.setColorAt(0.0, QColor(0, 0, 0, 255))
         downToUp.setColorAt(1.0, QColor(0, 0, 0, 0))
 
         painter = QPainter(pixmap)

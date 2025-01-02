@@ -25,7 +25,11 @@ class Canvas(QWidget):
         pass
 
     def setSize(self, width, height):
+        self.size = (width, height)
         self.resize(width, height)
+
+    def getSize(self):
+        return self.size
         
     def getEdges(self):
         # returns a tuple of QPoints of each edge of the canvas

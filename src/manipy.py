@@ -1,6 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QLabel,
-                             QVBoxLayout, QAction, QStatusBar)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QLabel, QAction, QStatusBar)
 
 from brush import Brush
 from canvas import Canvas
@@ -11,7 +10,14 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.create
+        # Creating Canvas with default size
+        self.canvas = Canvas(self)
+        self.canvas.setMouseTracking(True)
+        self.setCentralWidget(self.canvas)
+
+        # toolbar window for mouse tracking in main window
+        self.setMouseTracking(True)
+
         # Set up basics
         self.setUpMenuBar()
         self.setUpToolBar()
@@ -19,18 +25,6 @@ class Window(QMainWindow):
         self.setStyleSheet("background-color: grey;")
         self.currentTool = None
         self.brush = Brush()
-
-        # Creating Canvas with default size
-        self.canvas = Canvas(self)
-        self.canvas.setMouseTracking(True)
-        self.setCentralWidget(self.canvas)
-        
-        # toolbar window for mouse tracking in main window
-        self.setMouseTracking(True)
-
-        # side layout to initialize locationLabel at
-        self.sideLayout = QVBoxLayout()
-        self.sideLayout.addWidget(self.locationLabel)
 
         # toolbar window for tools for painting
         self.toolBox = ToolBox(self)
@@ -65,10 +59,11 @@ class Window(QMainWindow):
         self.setStatusBar(self.statusBar)
         self.statusBar.setStyleSheet("background-color: white;")
 
-        self.locationLabel = QLabel(self)
-        self.locationLabel.setText("0, 0")
+        self.locationLabel = QLabel("0, 0")
+        self.sizeLabel = QLabel(f"{self.canvas.getSize()[0]} px x {self.canvas.getSize()[1]} px")
 
-        self.statusBar.addPermanentWidget(self.locationLabel)
+        self.statusBar.addWidget(self.locationLabel)
+        self.statusBar.addWidget(self.sizeLabel)
 
 
     def setUpToolBar(self):
