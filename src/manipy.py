@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QWidget, QLabel, QGridLayout, 
-                             QPushButton, QVBoxLayout, QBoxLayout, QAction)
-from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QCursor, QPainterPath
+                             QPushButton, QVBoxLayout, QHBoxLayout, QAction, QStatusBar)
+from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QCursor, QPainterPath, QLinearGradient, QBrush
 
 class Canvas(QWidget):
     def __init__(self, parent=None, width=1000, height=750):
@@ -58,6 +58,7 @@ class ToolBox(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.brushControl = Brush()
+        self.move(10, 200)
 
         self.setStyleSheet("background-color: white;")
         self.masterLayout = QGridLayout()
@@ -182,14 +183,45 @@ class Brush(QWidget):
         self.size -= 1
         self.setBrushType(self.brush)
 
-class ColorPicker(): # TODO allows for an overall gradient of the color spectrum for choosing
-    def __init__():
-        pass
+class ColorPicker(QWidget): # TODO allows for an overall gradient of the color spectrum for choosing
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Color Picker")
+        self.setGeometry(10, 570, 400, 400)
+        self.setStyleSheet("background-color: white")
+
+        label = QLabel(self)
+        label.setPixmap(self.createBoxGradient(200))
+
+        self.setWindowFlags(self.windowFlags() | Qt.Tool)
+        self.show()
+
+    def createBoxGradient(self, side):
+        pixmap = QPixmap(side, side)
+        pixmap.fill(Qt.transparent)
+
+        sideToSide = QLinearGradient(0, 0, side, 0)
+        downToUp = QLinearGradient(0, side, 0, 0)
+
+        sideToSide.setColorAt(0.0, QColor("white"))
+        sideToSide.setColorAt(1.0, QColor("cyan"))
+
+        downToUp.setColorAt(0.0, QColor(0, 0, 0, 255))
+        downToUp.setColorAt(2.0, QColor(0, 0, 0, 255))
+        downToUp.setColorAt(1.0, QColor(0, 0, 0, 0))
+
+        painter = QPainter(pixmap)
+        painter.fillRect(pixmap.rect(), sideToSide)
+        painter.fillRect(pixmap.rect(), downToUp)
+        painter.end()
+
+        return pixmap
 
 class Window(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.create
         # Set up basics
         self.setUpMenuBar()
         self.setUpToolBar()
@@ -206,12 +238,6 @@ class Window(QMainWindow):
         # toolbar window for mouse tracking in main window
         self.setMouseTracking(True)
 
-        self.locationLabel = QLabel(self)
-        self.locationLabel.setText("0, 0")
-        self.locationLabel.setWindowFlags(self.locationLabel.windowFlags() | Qt.Tool)
-        self.locationLabel.setGeometry(10, 200, 100, 30)
-        self.locationLabel.show()
-
         # side layout to initialize locationLabel at
         self.sideLayout = QVBoxLayout()
         self.sideLayout.addWidget(self.locationLabel)
@@ -223,6 +249,40 @@ class Window(QMainWindow):
         # Set up of brushes and tools
         self.setCursor(self.toolBox.getCurrentTool())
         self.drawing = False
+
+        # Color picker
+        self.colorPicker = ColorPicker(self)
+
+    def setUpMenuBar(self):
+        self.menuBar = QMenuBar()
+        self.menuBar.setStyleSheet("background-color: white;")
+
+        fileMenu = QMenu("File", self)
+        newAction = QAction("New", self)
+        openAction = QAction("Open", self)
+        saveAction = QAction("Save", self)
+        saveAsAction = QAction("Save As", self)
+        fileMenu.addAction(newAction)
+        fileMenu.addAction(openAction)
+        fileMenu.addAction(saveAction)
+        fileMenu.addAction(saveAsAction)
+
+        self.menuBar.addMenu(fileMenu)
+        self.setMenuBar(self.menuBar)
+
+    def setUpStatusBar(self):
+        self.statusBar = QStatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.setStyleSheet("background-color: white;")
+
+        self.locationLabel = QLabel(self)
+        self.locationLabel.setText("0, 0")
+
+        self.statusBar.addPermanentWidget(self.locationLabel)
+
+
+    def setUpToolBar(self):
+        pass
 
     def mouseMoveEvent(self, event):
         position = event.globalPos()
@@ -254,29 +314,6 @@ class Window(QMainWindow):
 
     def updateCursor(self):
         self.setCursor(self.toolBox.getCurrentTool()) 
-
-    def setUpMenuBar(self):
-        self.menuBar = QMenuBar()
-        self.menuBar.setStyleSheet("background-color: white;")
-
-        fileMenu = QMenu("File", self)
-        newAction = QAction("New", self)
-        openAction = QAction("Open", self)
-        saveAction = QAction("Save", self)
-        saveAsAction = QAction("Save As", self)
-        fileMenu.addAction(newAction)
-        fileMenu.addAction(openAction)
-        fileMenu.addAction(saveAction)
-        fileMenu.addAction(saveAsAction)
-
-        self.menuBar.addMenu(fileMenu)
-        self.setMenuBar(self.menuBar)
-
-    def setUpStatusBar(self):
-        pass
-
-    def setUpToolBar(self):
-        pass
 
 if __name__ == "__main__":
     app = QApplication([])
