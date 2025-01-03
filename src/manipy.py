@@ -26,6 +26,9 @@ class Window(QMainWindow):
         self.currentTool = None
         self.brush = Brush()
 
+        # Color picker (Note 1)
+        self.colorPicker = ColorPicker(self)
+
         # toolbar window for tools for painting
         self.toolBox = ToolBox(self)
         self.brush.toolChanged.connect(self.updateCursor)
@@ -33,9 +36,6 @@ class Window(QMainWindow):
         # Set up of brushes and tools
         self.setCursor(self.toolBox.getCurrentTool())
         self.drawing = False
-
-        # Color picker
-        self.colorPicker = ColorPicker(self)
 
     def setUpMenuBar(self):
         self.menuBar = QMenuBar()
@@ -105,3 +105,17 @@ if __name__ == "__main__":
     mainWin = Window()
     mainWin.showMaximized()
     app.exec_()
+
+
+
+    '''
+    Note 0:
+    These will be moved in the future to its own file but it is simply more convenient to write here in the mean time.
+
+    Note 1:
+    It is important that any class calling the singleton brush class is initialized before the toolbox class. It is not
+    completely clear to me what exactly the issue is but it may have to do with the how the cursor is setup with the
+    brush class.
+
+    Refactoring or rewriting the brush class may be something to look into in the future.
+    '''
