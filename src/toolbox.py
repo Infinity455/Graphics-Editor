@@ -33,6 +33,10 @@ class ToolBox(QWidget):
         self.fillButton.clicked.connect(self.fillClicked)
         self.masterLayout.addWidget(self.fillButton, 2, 0)
 
+        self.pickerButton = QPushButton("Color Picker", self)
+        self.pickerButton.clicked.connect(self.pickerClicked)
+        self.masterLayout.addWidget(self.pickerButton, 2, 1)
+
         self.setWindowFlags(self.windowFlags() | Qt.Tool)
         self.show()
 
@@ -54,6 +58,9 @@ class ToolBox(QWidget):
             pass
 
     def fillClicked(self):
+        pass
+
+    def pickerClicked(self):
         pass
 
 

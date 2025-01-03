@@ -2,7 +2,6 @@ from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QColor, QPainter, QPixmap, QCursor, QPainterPath
 
-
 class Brush(QWidget):
 
     toolChanged = pyqtSignal()
@@ -55,12 +54,20 @@ class Brush(QWidget):
 
                 path.addEllipse(0, 0, self.size - 1, self.size - 1)
                 self.shape = path
+            case "picker":
+                pass
             case _:
                 print("WARNING: Brush not found")
         self.toolChanged.emit()
 
     def setBrushPosition(self, point: QPoint):
         self.position = point
+
+    def setColor(self, newColor):
+        self.color = newColor
+
+    def getColor(self):
+        return self.color
 
     def getCurrentBrush(self):
         return self.brushForCursor

@@ -55,7 +55,7 @@ class Canvas(QWidget):
         shape = QPainterPath(ogShape)
         shape.translate(xNorm, yNorm)
         with QPainter(self.pixmap) as painter:
-            painter.setBrush(Qt.black)
+            painter.setBrush(self.brush.color)
             painter.setPen(Qt.transparent)
             painter.drawPath(shape)
         self.update()
