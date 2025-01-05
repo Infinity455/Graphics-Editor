@@ -17,6 +17,11 @@ class ColorPicker(QWidget):
         self.boxLabel = QLabel(self)
         self.createBoxGradient(200, QColor("cyan"))
 
+        self.circleIndicator = self.createCircleIndicator()
+        self.cIlabel = QLabel(self)
+        self.cIlabel.setPixmap(self.circleIndicator)
+        self.cIlabel.setStyleSheet("background: transparent; border: none;")
+
         self.spectrumLabel = QLabel(self)
         self.createSpectrumGradient()
         self.spectrumLabel.move(QPoint(250, 0))
@@ -29,6 +34,17 @@ class ColorPicker(QWidget):
 
         self.setWindowFlags(self.windowFlags() | Qt.Tool)
         self.show()
+
+    def createCircleIndicator(self):
+        pixmap = QPixmap(10, 10)
+        pixmap.fill(Qt.transparent)
+
+        with QPainter(pixmap) as painter:
+            painter.setBrush(Qt.transparent)
+            painter.setPen(Qt.black)
+            painter.drawEllipse(0, 0, 9, 9)
+
+        return pixmap
 
     def createBoxGradient(self, side, hue):
         pixmap = QPixmap(side, side)
@@ -90,6 +106,7 @@ class ColorPicker(QWidget):
             boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
             self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
             self.changePrimaryColor()
+            self.cIlabel.move(boxPos.x(), boxPos.y())
         elif self.spectrumLabel.geometry().contains(event.pos()):
             specPos = self.spectrumLabel.mapFromGlobal(event.globalPos())
             color = self.specImage.pixelColor(specPos.x(), specPos.y())
@@ -105,3 +122,4 @@ class ColorPicker(QWidget):
                 boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
                 self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
                 self.changePrimaryColor()
+                self.cIlabel.move(boxPos.x(), boxPos.y())
