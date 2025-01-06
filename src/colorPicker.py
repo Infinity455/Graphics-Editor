@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtWidgets import QWidget, QLabel
+from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QSlider, QHBoxLayout, QComboBox, QStackedLayout, QStackedWidget, QSizePolicy
 from PyQt5.QtGui import QColor, QPainter, QPixmap, QLinearGradient
 
 from brush import Brush
@@ -11,29 +11,89 @@ class ColorPicker(QWidget):
         self.setGeometry(10, 570, 400, 400)
         self.setStyleSheet("background-color: white")
 
+        self.colorPick = False
+
         self.brush = Brush()
         self.__color = QColor(255, 255, 255)
 
         self.boxLabel = QLabel(self)
         self.createBoxGradient(200, QColor("cyan"))
 
-        self.circleIndicator = self.createCircleIndicator()
-        self.cIlabel = QLabel(self)
-        self.cIlabel.setPixmap(self.circleIndicator)
-        self.cIlabel.setStyleSheet("background: transparent; border: none;")
+        self.circleIndicatorPixmap = self.createCircleIndicator()
+        self.circleIndicatorLabel = QLabel(self)
+        self.circleIndicatorLabel.setPixmap(self.circleIndicatorPixmap)
+        self.circleIndicatorLabel.setStyleSheet("background: transparent; border: none;")
 
         self.spectrumLabel = QLabel(self)
         self.createSpectrumGradient()
         self.spectrumLabel.move(QPoint(250, 0))
 
         self.primColorLabel = QLabel(self)
-        self.primColorLabel.move(50, 325)
+        self.primColorLabel.move(325, 50)
         map = QPixmap(50,50)
         map.fill(QColor("black"))
         self.primColorLabel.setPixmap(map)
 
+        self.setUpSliders()
+
         self.setWindowFlags(self.windowFlags() | Qt.Tool)
         self.show()
+
+    def setUpSliders(self):
+        widgetContainer = QWidget(self)
+        # widgetContainer.setStyleSheet("background-color: green")
+
+        sliderLayout = QVBoxLayout(self)
+
+        colorRepChoices = QComboBox()
+        colorRepChoices.addItems(["HSV", "RGB", "CMYK", "HSL", "Overall View"])
+        colorRepChoices.currentIndexChanged.connect(self.changeColorRep)
+        sliderLayout.addWidget(colorRepChoices)
+
+        self.repLayouts = QStackedLayout()
+
+        sliderList = ["HSV", "RGB", "CMYK", "HSL"]
+
+        
+        for repType in sliderList:
+            mainContainer = QWidget(self)
+            mainLayout = QVBoxLayout(self)
+            for char in repType:
+                tempContainer = QWidget()
+                rowLayout = QHBoxLayout()
+                name = QLabel(char)
+                slider = QSlider(Qt.Horizontal, tempContainer)
+                slider.setRange(0, 360 if char == "H" else 255)
+                slider.setValue(180)
+                valueLabel = QLabel("128", tempContainer)
+                valueLabel.setFixedWidth(40)
+                slider.valueChanged.connect(lambda value, label=valueLabel: label.setText(str(value)))
+
+                tempContainer.setMinimumHeight(40)
+
+                rowLayout.addWidget(name)
+                rowLayout.addWidget(slider)
+                rowLayout.addWidget(valueLabel)
+
+                tempContainer.setLayout(rowLayout)
+                mainLayout.addWidget(tempContainer)
+
+            mainContainer.setLayout(mainLayout)
+            self.repLayouts.addWidget(mainContainer)
+
+
+        containerForStack = QWidget(self)
+        containerForStack.setLayout(self.repLayouts)
+        sliderLayout.addWidget(containerForStack)
+
+        widgetContainer.setLayout(sliderLayout)
+        widgetContainer.setGeometry(0, 200, 400, 200)
+
+    def changeColorRep(self, index):
+        self.repLayouts.setCurrentIndex(index)
+
+    def sliderSpecifications(self, context, currentRep):
+        pass
 
     def createCircleIndicator(self):
         pixmap = QPixmap(10, 10)
@@ -106,7 +166,7 @@ class ColorPicker(QWidget):
             boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
             self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
             self.changePrimaryColor()
-            self.cIlabel.move(boxPos.x(), boxPos.y())
+            self.circleIndicatorLabel.move(boxPos.x(), boxPos.y())
         elif self.spectrumLabel.geometry().contains(event.pos()):
             specPos = self.spectrumLabel.mapFromGlobal(event.globalPos())
             color = self.specImage.pixelColor(specPos.x(), specPos.y())
@@ -122,4 +182,4 @@ class ColorPicker(QWidget):
                 boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
                 self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
                 self.changePrimaryColor()
-                self.cIlabel.move(boxPos.x(), boxPos.y())
+                self.circleIndicatorLabel.move(boxPos.x(), boxPos.y())
