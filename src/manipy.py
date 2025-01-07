@@ -5,6 +5,7 @@ from brush import Brush
 from canvas import Canvas
 from toolbox import ToolBox
 from colorPicker import ColorPicker
+from layers import Layers
 
 class Window(QMainWindow):
     def __init__(self):
@@ -28,6 +29,9 @@ class Window(QMainWindow):
 
         # Color picker (Note 1)
         self.colorPicker = ColorPicker(self)
+
+        # Layer Window
+        self.layerWindow = Layers(self)
 
         # toolbar window for tools for painting
         self.toolBox = ToolBox(self)
