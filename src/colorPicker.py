@@ -67,8 +67,8 @@ class ColorPicker(QWidget):
                 valueLabel = QLabel("128", tempContainer)
                 valueLabel.setFixedWidth(40)
                 slider.valueChanged.connect(
-                    lambda value, label=valueLabel: 
-                    self.sliderTasks(repType, char, value, label) 
+                    lambda value, label=valueLabel, context=repType, currentRep=char: 
+                    self.sliderTasks(context, currentRep, value, label) 
                 )
 
                 tempContainer.setMinimumHeight(40)
@@ -99,20 +99,47 @@ class ColorPicker(QWidget):
 
         match(context):
             case "HSV":
-                hsv = self.__color.getHsv()
-                print(hsv)
+                hsv = self.__color.getHsv() #(h, s, v, alpha)
                 if currentRep is "H":
-                    pass
+                    self.__color.setHsv(value, hsv[1], hsv[2], hsv[3])
+                    tempColor = QColor(0, 0, 0)
+                    tempColor.setHsv(value, 255, 255)
+                    self.createBoxGradient(200, tempColor)
                 elif currentRep is "S":
-                    pass
+                    self.__color.setHsv(hsv[0], value, hsv[2], hsv[3])
                 else:
-                    pass
+                    self.__color.setHsv(hsv[0], hsv[1], value, hsv[3])
             case "RGB":
-                pass
+                rgb = self.__color.getRgb()
+                if currentRep is "R":
+                    self.__color.setRgb(value, rgb[1], rgb[2], rgb[3])
+                elif currentRep is "G":
+                    self.__color.setRgb(rgb[0], value, rgb[2], rgb[3])
+                else:
+                    self.__color.setRgb(rgb[0], rgb[1], value, rgb[3])
             case "CMYK":
-                pass
+                cymk = self.__color.getCmyk()
+                if currentRep is "C":
+                    self.__color.setCmyk(value, cymk[1], cymk[2], cymk[3], cymk[4])
+                elif currentRep is "M":
+                    self.__color.setCmyk(cymk[0], value, cymk[2], cymk[3], cymk[4])
+                elif currentRep is "Y":
+                    self.__color.setCmyk(cymk[0], cymk[1], value, cymk[3], cymk[4])
+                else:
+                    self.__color.setCmyk(cymk[0], cymk[1], cymk[2], value, cymk[4])
             case "HSL":
-                pass
+                hsl = self.__color.getHsl() #(h, s, l, alpha)
+                if currentRep is "H":
+                    self.__color.setHsv(value, hsl[1], hsl[2], hsl[3])
+                    tempColor = QColor(0, 0, 0)
+                    tempColor.setHsl(value, 255, 255)
+                    self.createBoxGradient(200, tempColor)
+                elif currentRep is "S":
+                    self.__color.setHsv(hsl[0], value, hsl[2], hsl[3])
+                else:
+                    self.__color.setHsl(hsl[0], hsl[1], value, hsl[3])
+        self.changePrimaryColor()
+        
 
     def sliderStyleSheets(self, context, currentRep):
         styleSheet = ""
@@ -207,6 +234,7 @@ class ColorPicker(QWidget):
         elif self.spectrumLabel.geometry().contains(event.pos()):
             specPos = self.spectrumLabel.mapFromGlobal(event.globalPos())
             color = self.specImage.pixelColor(specPos.x(), specPos.y())
+            self.changePrimaryColor()
             self.createBoxGradient(200, color)
 
     def mouseMoveEvent(self, event):
