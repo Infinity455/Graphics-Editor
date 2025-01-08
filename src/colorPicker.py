@@ -41,7 +41,6 @@ class ColorPicker(QWidget):
 
     def setUpSliders(self):
         widgetContainer = QWidget(self)
-        # widgetContainer.setStyleSheet("background-color: green")
 
         sliderLayout = QVBoxLayout(self)
 
@@ -67,7 +66,10 @@ class ColorPicker(QWidget):
                 slider.setValue(180)
                 valueLabel = QLabel("128", tempContainer)
                 valueLabel.setFixedWidth(40)
-                slider.valueChanged.connect(lambda value, label=valueLabel: label.setText(str(value)))
+                slider.valueChanged.connect(
+                    lambda value, label=valueLabel: 
+                    self.sliderTasks(repType, char, value, label) 
+                )
 
                 tempContainer.setMinimumHeight(40)
 
@@ -92,8 +94,43 @@ class ColorPicker(QWidget):
     def changeColorRep(self, index):
         self.repLayouts.setCurrentIndex(index)
 
-    def sliderSpecifications(self, context, currentRep):
-        pass
+    def sliderTasks(self, context, currentRep, value, label: QLabel):
+        label.setText(str(value))
+
+        match(context):
+            case "HSV":
+                hsv = self.__color.getHsv()
+                print(hsv)
+                if currentRep is "H":
+                    pass
+                elif currentRep is "S":
+                    pass
+                else:
+                    pass
+            case "RGB":
+                pass
+            case "CMYK":
+                pass
+            case "HSL":
+                pass
+
+    def sliderStyleSheets(self, context, currentRep):
+        styleSheet = ""
+        
+        match(context):
+            case "HSV":
+                if currentRep is "H":
+                    pass
+                elif currentRep is "S":
+                    pass
+                else:
+                    pass
+            case "RGB":
+                pass
+            case "CMYK":
+                pass
+            case "HSL":
+                pass
 
     def createCircleIndicator(self):
         pixmap = QPixmap(10, 10)

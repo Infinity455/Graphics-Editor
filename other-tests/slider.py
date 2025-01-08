@@ -1,80 +1,52 @@
 import sys
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QLabel,
-    QSlider,
-    QVBoxLayout,
-    QHBoxLayout,
-)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5 import QtGui, QtCore, QtWidgets
 
-class SliderDemo(QMainWindow):
+class MyApp(object):    
     def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Sliders with Labels Demo")
-        self.setGeometry(100, 100, 600, 400)
+        super(MyApp, self).__init__()                
+        self.mainWidget = QtWidgets.QWidget()
+        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.mainWidget.setLayout(self.mainLayout)
 
-        # Main widget and layout
-        centralWidget = QWidget(self)
-        self.setCentralWidget(centralWidget)
-        mainLayout = QVBoxLayout(centralWidget)
+        self.slider = QtWidgets.QSlider()
+        self.slider.setOrientation(QtCore.Qt.Horizontal)
+        self.slider.setStyleSheet(self.stylesheet())
 
-        # Add sliders with labels
-        self.setUpSlidersWithLabels(mainLayout)
+        self.mainLayout.addWidget(self.slider)
+        self.mainWidget.show()
+        sys.exit(app.exec_())
 
-    def setUpSlidersWithLabels(self, parentLayout):
-        # Create a container widget for the sliders
-        sliderContainer = QWidget(self)
+    def stylesheet(self):
+        return """
+            QSlider::groove:horizontal {
+                background: white;
+                height: 40px;
+            }
 
-        # Create a vertical layout for stacking sliders
-        sliderLayout = QVBoxLayout(sliderContainer)
+            QSlider::sub-page:horizontal {
+                background: qlineargradient(x1: 0, y1: 0,    x2: 0, y2: 1,
+                    stop: 0 #66e, stop: 1 #bbf);
+                background: qlineargradient(x1: 0, y1: 0.2, x2: 1, y2: 1,
+                    stop: 0 #bbf, stop: 1 #55f);
+                height: 40px;
+            }
 
-        # Create sliders with labels
-        sliders = [
-            ("Hue", QSlider(Qt.Horizontal, sliderContainer)),
-            ("Saturation", QSlider(Qt.Horizontal, sliderContainer)),
-            ("Value", QSlider(Qt.Horizontal, sliderContainer)),
-            ("Red", QSlider(Qt.Horizontal, sliderContainer)),
-            ("Green", QSlider(Qt.Horizontal, sliderContainer)),
-            ("Blue", QSlider(Qt.Horizontal, sliderContainer)),
-        ]
+            QSlider::add-page:horizontal {
+                background: #fff;
+                height: 40px;
+            }
 
-        # Add each slider to the layout
-        for name, slider in sliders:
-            # Create horizontal layout for this slider row
-            rowLayout = QHBoxLayout()
+            QSlider::handle:horizontal {
+                background: #bbf;
+                border: 0px;
+                width: 0px;
+                margin-top: 0px;
+                margin-bottom: 0px;
+                border-radius: 0px;
+            }
+        """
 
-            # Create the name label
-            nameLabel = QLabel(name, sliderContainer)
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    MyApp()
 
-            # Set up the slider
-            slider.setRange(0, 255)
-            slider.setValue(128)  # Default value
-
-            # Set up the value label
-            valueLabel = QLabel("128", sliderContainer)
-            valueLabel.setFixedWidth(40)  # Make it compact and align it neatly
-
-            # Connect the slider's value change signal to update the value label
-            slider.valueChanged.connect(lambda value, label=valueLabel: label.setText(str(value)))
-
-            # Add widgets to the row layout
-            rowLayout.addWidget(nameLabel)
-            rowLayout.addWidget(slider)
-            rowLayout.addWidget(valueLabel)
-
-            # Add the row layout to the main vertical layout
-            sliderLayout.addLayout(rowLayout)
-
-        # Add the slider container layout to the parent layout
-        parentLayout.addWidget(sliderContainer)
-
-# Run the application
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    demo = SliderDemo()
-    demo.show()
-    sys.exit(app.exec_())
