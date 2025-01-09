@@ -60,25 +60,36 @@ class ColorPicker(QWidget):
         for repType in sliderList:
             mainContainer = QWidget(self)
             mainLayout = QVBoxLayout(self)
+            mainLayout.setContentsMargins(10, 0, 10, 0)
             tempSlides = list()
             for char in repType:
                 tempContainer = QWidget()
+                tempContainer.setContentsMargins(0, 0, 0, 0)
                 rowLayout = QHBoxLayout()
+                rowLayout.setContentsMargins(0, 0, 0, 0)
                 name = QLabel(char)
+                name.setFixedWidth(20)
                 slider = QSlider(Qt.Horizontal, tempContainer)
-                slider.setRange(0, 359 if char == "H" else 255)
+                slider.setContentsMargins(0, 0, 0, 0)
                 valueLabel = QLabel(tempContainer)
                 valueLabel.setFixedWidth(40)
                 slider.valueChanged.connect(
                     lambda value, label=valueLabel, context=repType, currentRep=char: 
                     self.sliderTasks(context, currentRep, value, label) 
                 )
+                # print(f"{slider.geometry().width()} and {slider.geometry().height()}")
 
-                # slider.setStyleSheet(self.sliderStyleSheets(repType, char))
+                if char == "H":
+                    slider.setRange(0, 359)
+                    slider.setStyleSheet(self.hueSliderStyle())
+                else:
+                    slider.setRange(0, 255)
+                    slider.setStyleSheet(self.dynamicSliderStyles(repType, char))
 
                 tempSlides.append((char, slider, valueLabel))
 
-                tempContainer.setMinimumHeight(40)
+                slider.setFixedHeight(40)
+                # tempContainer.setStyleSheet("background-color: cyan;")
 
                 rowLayout.addWidget(name)
                 rowLayout.addWidget(slider)
@@ -153,74 +164,240 @@ class ColorPicker(QWidget):
         self.setAllSlides()
         
 
-    def sliderStyleSheets(self, context, currentRep):
+    def hueSliderStyle(self):
+        return """
+                QSlider::groove:horizontal {
+                    background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), 
+                                stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), 
+                                stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), 
+                                stop:1 rgba(255, 0, 0, 255));
+                    height: 20px; 
+                    border-radius: 10px;
+                }
+                    QSlider::handle:horizontal {
+                    background: rgba(0, 0, 0, 25);
+                    border: 1px solid #777;
+                    width: 15px;
+                    height: 20px;
+                    margin: -10px;
+                    border-radius: 5px;
+                } """
+
+    def dynamicSliderStyles(self, context, currentRep):
         styleSheet = ""
         
         match(context):
             case "HSV":
-                if currentRep == "H":
-                    styleSheet="""
-                        QSlider::groove:horizontal {
+                hsv = self.__color.getHsv()
+                if currentRep == "S":
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
                             background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
-                                        stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), 
-                                        stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), 
-                                        stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), 
-                                        stop:1 rgba(255, 0, 0, 255));
-                            height: 10px; 
-                        }
-                            QSlider::handle:horizontal {
+                                        stop:0 hsv({self.lastValidHue}, 0%, {hsv[2]}), 
+                                        stop:1 hsv({self.lastValidHue}, 100%, {hsv[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
                             background: rgba(0, 0, 0, 25);
                             border: 1px solid #777;
-                            width: 20px;
-                            margin: -5px 0; /* Center the handle */
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
                             border-radius: 5px;
-                        } """
-                elif currentRep == "S":
-                    pass
-                else:
-                    pass
+                        }} """
+                elif currentRep == "V":
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 hsv({self.lastValidHue}, {hsv[1]}, 0%), 
+                                        stop:1 hsv({self.lastValidHue}, {hsv[1]}, 100%));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
             case "RGB":
                 rgb = self.__color.getRgb()
                 if currentRep == "R":
-                    val = rgb[0]
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb(0, {rgb[1]}, {rgb[2]}), 
+                                        stop:1 rgb(255, {rgb[1]}, {rgb[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
                 elif currentRep == "G":
-                    val = rgb[1]
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgb[0]}, 0, {rgb[2]}), 
+                                        stop:1 rgb({rgb[0]}, 255, {rgb[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
                 else:
-                    val = rgb[2]
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgb[0]}, {rgb[1]}, 0), 
+                                        stop:1 rgb({rgb[0]}, {rgb[1]}, 255));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
             case "CMYK":
                 cmyk = self.__color.getCmyk()
                 if currentRep == "C":
-                    val = cmyk[0]
+                    rgbStart = self.cmykToRgb(0, cmyk[1], cmyk[2], cmyk[3])
+                    rgbEnd = self.cmykToRgb(255, cmyk[1], cmyk[2], cmyk[3])
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgbStart[0]}, {rgbStart[1]}, {rgbStart[2]}), 
+                                        stop:1 rgb({rgbEnd[0]}, {rgbEnd[1]}, {rgbEnd[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
                 elif currentRep == "M":
-                    val = cmyk[1]
+                    rgbStart = self.cmykToRgb(cmyk[0], 0, cmyk[2], cmyk[3])
+                    rgbEnd = self.cmykToRgb(cmyk[0], 255, cmyk[2], cmyk[3])
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgbStart[0]}, {rgbStart[1]}, {rgbStart[2]}), 
+                                        stop:1 rgb({rgbEnd[0]}, {rgbEnd[1]}, {rgbEnd[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
                 elif currentRep == "Y":
-                    val = cmyk[2]
+                    rgbStart = self.cmykToRgb(cmyk[0], cmyk[1], 0, cmyk[3])
+                    rgbEnd = self.cmykToRgb(cmyk[0], cmyk[1], 255, cmyk[3])
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgbStart[0]}, {rgbStart[1]}, {rgbStart[2]}), 
+                                        stop:1 rgb({rgbEnd[0]}, {rgbEnd[1]}, {rgbEnd[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
                 else:
-                    val = cmyk[3]
+                    rgbStart = self.cmykToRgb(cmyk[0], cmyk[1], cmyk[2], 0)
+                    rgbEnd = self.cmykToRgb(cmyk[0], cmyk[1], cmyk[2], 255)
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgb({rgbStart[0]}, {rgbStart[1]}, {rgbStart[2]}), 
+                                        stop:1 rgb({rgbEnd[0]}, {rgbEnd[1]}, {rgbEnd[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
             case "HSL":
                 hsl = self.__color.getHsl()
-                if currentRep == "H":
-                    styleSheet="""
-                        QSlider::groove:horizontal {
+                if currentRep == "S":
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
                             background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
-                                        stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), 
-                                        stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), 
-                                        stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), 
-                                        stop:1 rgba(255, 0, 0, 255));
-                            height: 10px; 
-                        }
-                            QSlider::handle:horizontal {
-                            background: hsl(50, 0%, 100%);
+                                        stop:0 hsl({hsl[0]}, 0%, {hsl[2]}), 
+                                        stop:1 hsl({hsl[0]}, 100%, {hsl[2]}));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
                             border: 1px solid #777;
-                            width: 20px;
-                            margin: -5px 0; /* Center the handle */
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
                             border-radius: 5px;
-                        } """
-                elif currentRep == "S":
-                    val = hsl[1]
-                else:
-                    val = hsl[2]
+                        }} """
+                elif currentRep == "L":
+                    styleSheet = f"""
+                        QSlider::groove:horizontal {{
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 hsl({hsl[0]}, {hsl[1]}, 0%), 
+                                        stop:1 hsl({hsl[0]}, {hsl[1]}, 100%));
+                            height: 20px; 
+                            border-radius: 10px;
+                        }}
+                            QSlider::handle:horizontal {{
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 15px;
+                            height: 20px;
+                            margin: -10px;
+                            border-radius: 5px;
+                        }} """
         return styleSheet
+    
+    def cmykToRgb(self, c, m, y, k):
+        r = 255 * (1 - c / 255) * (1 - k / 255)
+        g = 255 * (1 - m / 255) * (1 - k / 255)
+        b = 255 * (1 - y / 255) * (1 - k / 255)
+        return int(r), int(g), int(b)
 
     def createCircleIndicator(self):
         size = 10
@@ -275,6 +452,8 @@ class ColorPicker(QWidget):
                         else:
                             val = hsl[2]
                 slider.setValue(val)
+                if char != "H":
+                    slider.setStyleSheet(self.dynamicSliderStyles(key, char))
                 label.setText(str(val))
                 slider.blockSignals(False)
 
