@@ -122,4 +122,13 @@ if __name__ == "__main__":
     brush class.
 
     Refactoring or rewriting the brush class may be something to look into in the future.
+
+    Note 2:
+    The color picker class keeps hue manually this is due to the following issues from how it was originally:
+        1. Although HSV can keep its own memory so when an undefined hue (eg. black) appears it will return the last valid hue,
+            HSL doesn't have this luxury and you need to keep your own to avoid the cases of an undefined hue causing issues
+            (so when S = 0 or L = 0 or 255)
+        2. It appears that using the graphical interface to adjust the saturation, value, or luminosity will cause the hue slider
+            to slowly drift to the nearest primary color point. This is likely due to the changes causing the overall color to be
+            recalculated and each time changing between color representations and causing slight rounding issues that add up.
     '''

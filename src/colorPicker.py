@@ -17,6 +17,8 @@ class ColorPicker(QWidget):
         self.__color = QColor()
         self.__color.setHsv(180, 0, 0)
 
+        self.lastValidHue = 180
+
         self.boxLabel = QLabel(self)
         self.createBoxGradient(200, QColor("cyan"))
 
@@ -64,13 +66,15 @@ class ColorPicker(QWidget):
                 rowLayout = QHBoxLayout()
                 name = QLabel(char)
                 slider = QSlider(Qt.Horizontal, tempContainer)
-                slider.setRange(0, 360 if char == "H" else 255)
-                valueLabel = QLabel("128", tempContainer)
+                slider.setRange(0, 359 if char == "H" else 255)
+                valueLabel = QLabel(tempContainer)
                 valueLabel.setFixedWidth(40)
                 slider.valueChanged.connect(
                     lambda value, label=valueLabel, context=repType, currentRep=char: 
                     self.sliderTasks(context, currentRep, value, label) 
                 )
+
+                # slider.setStyleSheet(self.sliderStyleSheets(repType, char))
 
                 tempSlides.append((char, slider, valueLabel))
 
@@ -107,6 +111,7 @@ class ColorPicker(QWidget):
                 hsv = self.__color.getHsv() #(h, s, v, alpha)
                 if currentRep == "H":
                     self.__color.setHsv(value, hsv[1], hsv[2], hsv[3])
+                    self.lastValidHue = value
                 elif currentRep == "S":
                     self.__color.setHsv(hsv[0], value, hsv[2], hsv[3])
                 else:
@@ -132,14 +137,17 @@ class ColorPicker(QWidget):
             case "HSL":
                 hsl = self.__color.getHsl() #(h, s, l, alpha)
                 if currentRep == "H":
-                    self.__color.setHsl(value, hsl[1], hsl[2], hsl[3])
+                    if value < 0:
+                        self.__color.setHsl(self.lastValidHue, hsl[1], hsl[2], hsl[3])
+                    else:
+                        self.__color.setHsl(value, hsl[1], hsl[2], hsl[3])
+                        self.lastValidHue = value
                 elif currentRep == "S":
                     self.__color.setHsl(hsl[0], value, hsl[2], hsl[3])
                 else:
                     self.__color.setHsl(hsl[0], hsl[1], value, hsl[3])
         tempColor = self.__color.toHsv()
-        tempColor.setHsv(tempColor.hue(), 255, 255)
-        # print(f"{context}, {currentRep}, {tempColor.hue()}")
+        tempColor.setHsv(self.lastValidHue, 255, 255)
         self.createBoxGradient(200, tempColor)
         self.changePrimaryColor()
         self.setAllSlides()
@@ -151,17 +159,68 @@ class ColorPicker(QWidget):
         match(context):
             case "HSV":
                 if currentRep == "H":
-                    pass
+                    styleSheet="""
+                        QSlider::groove:horizontal {
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), 
+                                        stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), 
+                                        stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), 
+                                        stop:1 rgba(255, 0, 0, 255));
+                            height: 10px; 
+                        }
+                            QSlider::handle:horizontal {
+                            background: rgba(0, 0, 0, 25);
+                            border: 1px solid #777;
+                            width: 20px;
+                            margin: -5px 0; /* Center the handle */
+                            border-radius: 5px;
+                        } """
                 elif currentRep == "S":
                     pass
                 else:
                     pass
             case "RGB":
-                pass
+                rgb = self.__color.getRgb()
+                if currentRep == "R":
+                    val = rgb[0]
+                elif currentRep == "G":
+                    val = rgb[1]
+                else:
+                    val = rgb[2]
             case "CMYK":
-                pass
+                cmyk = self.__color.getCmyk()
+                if currentRep == "C":
+                    val = cmyk[0]
+                elif currentRep == "M":
+                    val = cmyk[1]
+                elif currentRep == "Y":
+                    val = cmyk[2]
+                else:
+                    val = cmyk[3]
             case "HSL":
-                pass
+                hsl = self.__color.getHsl()
+                if currentRep == "H":
+                    styleSheet="""
+                        QSlider::groove:horizontal {
+                            background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, 
+                                        stop:0 rgba(255, 0, 0, 255), stop:0.166 rgba(255, 255, 0, 255), 
+                                        stop:0.333 rgba(0, 255, 0, 255), stop:0.5 rgba(0, 255, 255, 255), 
+                                        stop:0.666 rgba(0, 0, 255, 255), stop:0.833 rgba(255, 0, 255, 255), 
+                                        stop:1 rgba(255, 0, 0, 255));
+                            height: 10px; 
+                        }
+                            QSlider::handle:horizontal {
+                            background: hsl(50, 0%, 100%);
+                            border: 1px solid #777;
+                            width: 20px;
+                            margin: -5px 0; /* Center the handle */
+                            border-radius: 5px;
+                        } """
+                elif currentRep == "S":
+                    val = hsl[1]
+                else:
+                    val = hsl[2]
+        return styleSheet
 
     def createCircleIndicator(self):
         size = 10
@@ -184,7 +243,7 @@ class ColorPicker(QWidget):
                     case "HSV":
                         hsv = self.__color.getHsv()
                         if char == "H":
-                            val = self.__color.hue()
+                            val = self.lastValidHue
                         elif char == "S":
                             val = hsv[1]
                         else:
@@ -210,7 +269,7 @@ class ColorPicker(QWidget):
                     case "HSL":
                         hsl = self.__color.getHsl()
                         if char == "H":
-                            val = self.__color.hue()
+                                val = self.lastValidHue
                         elif char == "S":
                             val = hsl[1]
                         else:
@@ -291,6 +350,7 @@ class ColorPicker(QWidget):
             color = self.specImage.pixelColor(specPos.x(), specPos.y())
             self.createBoxGradient(200, color)
             self.changePrimaryColor()
+            self.lastValidHue = color.hue()
             self.setAllSlides()
 
     def mouseMoveEvent(self, event):
@@ -309,6 +369,5 @@ class ColorPicker(QWidget):
                 color = self.specImage.pixelColor(specPos.x(), specPos.y())
                 self.createBoxGradient(200, color)
                 self.changePrimaryColor()
-                temp = self.__color.toHsv().getHsv()
-                self.__color.setHsv(color.toHsl().hue(), temp[1], temp[2])
+                self.lastValidHue = color.hue()
                 self.setAllSlides()
