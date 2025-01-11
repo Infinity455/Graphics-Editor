@@ -18,9 +18,10 @@ class ColorPicker(QWidget):
         self.__color.setHsv(180, 0, 0)
 
         self.lastValidHue = 180
+        self.boxGradSide = 200
 
         self.boxLabel = QLabel(self)
-        self.createBoxGradient(200, QColor("cyan"))
+        self.createBoxGradient(self.boxGradSide, QColor("cyan"))
 
         self.circleIndicatorPixmap = self.createCircleIndicator()
         self.circleIndicatorLabel = QLabel(self)
@@ -159,7 +160,7 @@ class ColorPicker(QWidget):
                     self.__color.setHsl(hsl[0], hsl[1], value, hsl[3])
         tempColor = self.__color.toHsv()
         tempColor.setHsv(self.lastValidHue, 255, 255)
-        self.createBoxGradient(200, tempColor)
+        self.createBoxGradient(self.boxGradSide, tempColor)
         self.changePrimaryColor()
         self.setAllSlides()
         
@@ -399,16 +400,16 @@ class ColorPicker(QWidget):
         b = 255 * (1 - y / 255) * (1 - k / 255)
         return int(r), int(g), int(b)
 
-    def createCircleIndicator(self):
-        size = 10
+    def createCircleIndicator(self, color=QColor(0, 0, 0)):
+        self.circleIndicatorSize = 10
 
-        pixmap = QPixmap(size, size)
+        pixmap = QPixmap(self.circleIndicatorSize, self.circleIndicatorSize)
         pixmap.fill(Qt.transparent)
 
         with QPainter(pixmap) as painter:
             painter.setBrush(Qt.transparent)
-            painter.setPen(Qt.black)
-            painter.drawEllipse(0, 0, size - 1, size - 1)
+            painter.setPen(color)
+            painter.drawEllipse(0, 0, self.circleIndicatorSize - 1, self.circleIndicatorSize - 1)
 
         return pixmap
     
@@ -455,6 +456,7 @@ class ColorPicker(QWidget):
                 if char != "H":
                     slider.setStyleSheet(self.dynamicSliderStyles(key, char))
                 label.setText(str(val))
+                self.setInBoxPosition()
                 slider.blockSignals(False)
 
     def createBoxGradient(self, side, hue: QColor):
@@ -512,6 +514,18 @@ class ColorPicker(QWidget):
         map.fill(self.__color)
         self.primColorLabel.setPixmap(map)
         self.brush.setColor(self.__color)
+
+    def setInBoxPosition(self):
+        hsv = self.__color.getHsv()
+        if hsv[2] < 128:
+            # newColor = QColor()
+            # newColor.setHsv(0, 0, 255 - hsv[2])
+            self.circleIndicatorLabel.setPixmap(self.createCircleIndicator(QColor(255, 255, 255)))
+
+        xBoxPos = int(self.boxGradSide * (hsv[1] / 255))
+        yBoxPos = 255 - int(self.boxGradSide * (hsv[2] / 255))
+        self.circleIndicatorLabel.move(xBoxPos - self.circleIndicatorSize//2, yBoxPos - self.circleIndicatorSize//2)
+        
     
     def mousePressEvent(self, event):
         self.colorPick = True
@@ -520,14 +534,14 @@ class ColorPicker(QWidget):
             self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
             tempColor = self.__color.toHsv()
             tempColor.setHsv(tempColor.hue(), 255, 255)
-            self.createBoxGradient(200, tempColor)
+            self.createBoxGradient(self.boxGradSide, tempColor)
             self.changePrimaryColor()
             self.setAllSlides()
             self.circleIndicatorLabel.move(boxPos.x(), boxPos.y())
         elif self.spectrumLabel.geometry().contains(event.pos()):
             specPos = self.spectrumLabel.mapFromGlobal(event.globalPos())
             color = self.specImage.pixelColor(specPos.x(), specPos.y())
-            self.createBoxGradient(200, color)
+            self.createBoxGradient(self.boxGradSide, color)
             self.changePrimaryColor()
             self.lastValidHue = color.hue()
             self.setAllSlides()
@@ -539,14 +553,14 @@ class ColorPicker(QWidget):
                 self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
                 tempColor = self.__color.toHsv()
                 tempColor.setHsv(tempColor.hue(), 255, 255)
-                self.createBoxGradient(200, tempColor)
+                self.createBoxGradient(self.boxGradSide, tempColor)
                 self.changePrimaryColor()
                 self.setAllSlides()
-                self.circleIndicatorLabel.move(boxPos.x(), boxPos.y())
+                self.circleIndicatorLabel.move(boxPos.x() - self.circleIndicatorSize//2, boxPos.y()-self.circleIndicatorSize//2)
             elif self.spectrumLabel.geometry().contains(event.pos()):
                 specPos = self.spectrumLabel.mapFromGlobal(event.globalPos())
                 color = self.specImage.pixelColor(specPos.x(), specPos.y())
-                self.createBoxGradient(200, color)
+                self.createBoxGradient(self.boxGradSide, color)
                 self.changePrimaryColor()
                 self.lastValidHue = color.hue()
                 self.setAllSlides()
