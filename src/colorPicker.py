@@ -136,6 +136,7 @@ class ColorPicker(QWidget):
                     self.__color.setRgb(rgb[0], value, rgb[2], rgb[3])
                 else:
                     self.__color.setRgb(rgb[0], rgb[1], value, rgb[3])
+                self.lastValidHue = self.__color.hue()
             case "CMYK":
                 cymk = self.__color.getCmyk()
                 if currentRep == "C":
@@ -146,6 +147,7 @@ class ColorPicker(QWidget):
                     self.__color.setCmyk(cymk[0], cymk[1], value, cymk[3], cymk[4])
                 else:
                     self.__color.setCmyk(cymk[0], cymk[1], cymk[2], value, cymk[4])
+                self.lastValidHue = self.__color.hue()
             case "HSL":
                 hsl = self.__color.getHsl() #(h, s, l, alpha)
                 if currentRep == "H":
@@ -523,7 +525,8 @@ class ColorPicker(QWidget):
             self.circleIndicatorLabel.setPixmap(self.createCircleIndicator(QColor(255, 255, 255)))
 
         xBoxPos = int(self.boxGradSide * (hsv[1] / 255))
-        yBoxPos = 255 - int(self.boxGradSide * (hsv[2] / 255))
+        yBoxPos = self.boxGradSide - int(self.boxGradSide * (hsv[2] / 255))
+        print(f"self.boxGradSide: {self.boxGradSide}, hsv[2] (visibilty): {hsv[2]}, hsv[2]/255: {hsv[2]/255}, yBoxPos: {yBoxPos}")
         self.circleIndicatorLabel.move(xBoxPos - self.circleIndicatorSize//2, yBoxPos - self.circleIndicatorSize//2)
         
     
@@ -532,9 +535,6 @@ class ColorPicker(QWidget):
         if self.boxLabel.geometry().contains(event.pos()):
             boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
             self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
-            tempColor = self.__color.toHsv()
-            tempColor.setHsv(tempColor.hue(), 255, 255)
-            self.createBoxGradient(self.boxGradSide, tempColor)
             self.changePrimaryColor()
             self.setAllSlides()
             self.circleIndicatorLabel.move(boxPos.x(), boxPos.y())
@@ -551,9 +551,6 @@ class ColorPicker(QWidget):
             if self.boxLabel.geometry().contains(event.pos()):
                 boxPos = self.boxLabel.mapFromGlobal(event.globalPos())
                 self.__color = self.boxImage.pixelColor(boxPos.x(), boxPos.y())
-                tempColor = self.__color.toHsv()
-                tempColor.setHsv(tempColor.hue(), 255, 255)
-                self.createBoxGradient(self.boxGradSide, tempColor)
                 self.changePrimaryColor()
                 self.setAllSlides()
                 self.circleIndicatorLabel.move(boxPos.x() - self.circleIndicatorSize//2, boxPos.y()-self.circleIndicatorSize//2)
